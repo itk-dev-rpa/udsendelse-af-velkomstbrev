@@ -22,9 +22,10 @@ KEYVAULT_PATH = "Digital_Post_Masseopslag"
 # ----------------------
 
 # The name of the job queue (if any)
-QUEUE_NAME = None
+QUEUE_NAME = "Udsendelse af Velkomstbrev"
 
 # Robot specific configs
 # ----------------------
 SAVE_FOLDER = "robot_framework/tmp"
 CVR = "55133018"
+TEMPLATE = 'robot_framework/template/Welcome letter to internationals.docx'
