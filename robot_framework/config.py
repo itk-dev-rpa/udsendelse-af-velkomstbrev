@@ -13,6 +13,9 @@ SCREENSHOT_SENDER = "robot@friend.dk"
 
 # Constant/Credential names
 ERROR_EMAIL = "Error Email"
+KEYVAULT_CREDENTIALS = "Keyvault"
+KEYVAULT_URI = "Keyvault URI"
+KEYVAULT_PATH = "Digital_Post_Masseopslag"
 
 
 # Queue specific configs
@@ -24,3 +27,4 @@ QUEUE_NAME = None
 # Robot specific configs
 # ----------------------
 SAVE_FOLDER = "robot_framework/tmp"
+CVR = "55133018"

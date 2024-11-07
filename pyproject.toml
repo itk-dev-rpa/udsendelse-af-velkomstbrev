@@ -21,6 +21,7 @@ dependencies = [
     "docx-mailmerge2 == 0.8.0",
     "docx2pdf == 0.1.8",
     "python-serviceplatformen == 1.*",
+    "hvac == 2.*",
 ]
 
 [project.optional-dependencies]
