@@ -18,6 +18,9 @@ classifiers = [
 dependencies = [
     "OpenOrchestrator == 1.*",
     "Pillow == 9.5.0",
+    "docx-mailmerge2 == 0.8.0",
+    "docx2pdf == 0.1.8",
+    "python-serviceplatformen == 1.*",
 ]
 
 [project.optional-dependencies]
