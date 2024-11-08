@@ -1,8 +1,19 @@
-"""Module for getting a certificate from hvac client"""
+"""Function for getting a certificate from hvac client"""
 from hvac import Client
 
 
 def get_certificate(vault_username: str, vault_password: str, vault_uri: str, vault_path: str) -> str:
+    """Access keyvault to save certificate and return path of certificate.
+
+    Args:
+        vault_username: Username for key vault.
+        vault_password: Password for key vault.
+        vault_uri: URI for key vault.
+        vault_path: Path for certificate in key vault.
+
+    Returns:
+        Certificate path as a string.
+    """
     # Access Keyvault
     vault_client = Client(vault_uri)
     token = vault_client.auth.approle.login(role_id=vault_username, secret_id=vault_password)

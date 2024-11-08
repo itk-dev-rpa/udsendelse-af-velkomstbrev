@@ -1,23 +1,25 @@
+"""Functions for getting data from SQL for people who moved into the city of Aarhus."""
 import pyodbc
 
 
 def sql_query(date: str) -> str:
-    return f"""
--- SQL Expression used to find people who moved into the commune, filtered by last address and other factors
--- Three databases are joined: current_address, previous_address and AdresseAktuel.
--- current_address show the citizens who moved into the commune
--- previous_address contains from where the citizen last moved, to differentiate between in- and out of the country
--- AdresseAktuel contains more data, and we get the name of the person from here, as well as filter dead, missing and young people
+    """Returns an SQL expression used to find people who moved to the city from a join of current_address, previous_address and AdresseAktuel.
+    current_address is used to find people who currently live in the city.
+    previous_address is used to find people whose last address was outside the city.
+    AdresseAktuel is used to get the name and filter people who are dead, young or missing.
 
--- Get sequence of relocations for each person, only look at the current and last address
+    Parameters:
+        date: Date of last move in the city.
+    Returns:
+        SQL string to find cpr and the first name of people who moved into the city since date.
+    """
+    return f"""
 WITH CTE AS (
     SELECT *,
     ROW_NUMBER() OVER (PARTITION BY CPR ORDER BY DatoTilflyt DESC) AS row_num
     FROM DWH.dwh.Flyttehistorik
 )
 SELECT current_address.CPR,
-    current_address.DatoTilflyt AS latest_move_date,
-    previous_address.DatoTilflyt AS second_latest_move_date,
     AdresseAktuel.Fornavn AS given_name
 FROM CTE current_address
 LEFT JOIN CTE previous_address ON current_address.CPR = previous_address.CPR AND current_address.row_num = 1 AND previous_address.row_num = 2
@@ -36,6 +38,14 @@ WHERE current_address.Komkode = '0751' -- Aarhus Kommune
 
 
 def read_data(query: str) -> list[pyodbc.Row]:
+    """Run query string against SQL to get rows of data.
+
+    Args:
+        query: String containing query to run against SQL.
+
+    Returns:
+        List of rows containing data from query.
+    """
     cn = pyodbc.connect("DRIVER={ODBC Driver 17 for SQL Server};SERVER=FaellesSQL;DATABASE=DWH;Trusted_Connection=yes")
     cursor = cn.cursor()
     cursor.execute(query)
@@ -45,7 +55,15 @@ def read_data(query: str) -> list[pyodbc.Row]:
 
 
 def sql_to_dict(data: list[pyodbc.Row]) -> dict:
+    """Convert list of SQL rows to a dictionary with first column as key and second as value.
+
+    Args:
+        data: List of SQL rows.
+
+    Returns:
+        Dictionary with first column set as key and second column set as value.
+    """
     id_names = {}
     for row in data:
-        id_names[row[0]] = row[3]
+        id_names[row[0]] = row[1]
     return id_names

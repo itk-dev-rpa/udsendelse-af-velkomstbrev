@@ -1,3 +1,4 @@
+"""Function for composing a message for Digital Post welcoming letter."""
 import os
 import uuid
 from datetime import datetime
@@ -8,7 +9,18 @@ from python_serviceplatformen.models.message import (
 )
 
 
-def compose_message(label: str, cvr: str, recipient_cpr: str, attachment_file_path: str):
+def compose_message(label: str, cvr: str, recipient_cpr: str, attachment_file_path: str) -> Message:
+    """Compose a message for Digital Post according to the requirements for a welcome letter.
+
+    Args:
+        label: Title of letter.
+        cvr: CVR of the entity sending the letter.
+        recipient_cpr: CPR of person to send the letter to.
+        attachment_file_path: File for the message body.
+
+    Returns:
+        Message formatted with data to send with Digital Post.
+    """
     with open(attachment_file_path, 'rb') as file:
         file_content = file.read()
     encoded_content = base64.b64encode(file_content).decode('utf-8')

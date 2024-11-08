@@ -54,20 +54,33 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
         orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.DONE)
 
 
-def write_document(name: str, cpr: str, document: MailMerge) -> str:
+def write_document(name: str, cpr: str, template: MailMerge) -> str:
+    """Write a document with name and CPR added to template, return path.
+
+    Args:
+        name: Name of person to add to letter.
+        cpr: CPR of person to add to letter.
+        template: A MailMerge document used as template.
+
+    Returns:
+        Path of generated file.
+    """
     filename = f'{config.SAVE_FOLDER}/{cpr}.docx'
-    document.merge(Fornavn=name,
+    template.merge(Fornavn=name,
                    CPR=cpr)
-    document.write(filename)
+    template.write(filename)
     return filename
 
 
 def encrypt_data(data: str, salt: str) -> str:
-    """Take some data and encrypt it with some salt.
+    """Encrypt data with salt.
 
     Args:
         data: Data to encrypt.
         salt: Related token to salt the data with.
+    
+    Returns:
+        Encrypted data as string.
     """
     salted_data = data + salt
     hash_obj = hashlib.sha256(salted_data.encode())
