@@ -4,7 +4,7 @@ from datetime import datetime
 import base64
 
 from python_serviceplatformen.models.message import (
-    Message, MessageHeader, Sender, Recipient, MessageBody, MainDocument, File
+    Message, MessageHeader, Sender, Recipient, MessageBody, MainDocument, File, Action, EntryPoint
 )
 
 
@@ -35,11 +35,19 @@ def compose_message(label: str, cvr: str, recipient_cpr: str, attachment_file_pa
             mainDocument=MainDocument(
                 files=[
                     File(
-                        encodingFormat="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        encodingFormat="application/pdf",
                         filename=os.path.basename(attachment_file_path),
                         language="en",
                         content=encoded_content
                     )
+                ],
+                actions=[
+                    Action(label="Explore international.aarhus.dk to discover more",
+                           actionCode="INFORMATION",
+                           entryPoint=EntryPoint(url="https://direc.to/kN8s")),
+                    Action(label="What do you think of this letter? Complete our survey for a chance to win a gift card to Musikhuset Aarhus!",
+                           actionCode="INFORMATION",
+                           entryPoint=EntryPoint(url="https://www.survey-xact.dk/LinkCollector?key=1HZ74774L19K")),
                 ]
             )
         )

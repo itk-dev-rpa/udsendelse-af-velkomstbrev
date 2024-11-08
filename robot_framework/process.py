@@ -1,6 +1,7 @@
 """This module contains the main process of the robot."""
 import hashlib
 import os
+from datetime import datetime, timedelta
 
 from OpenOrchestrator.orchestrator_connection.connection import OrchestratorConnection, QueueStatus
 from python_serviceplatformen.authentication import KombitAccess
@@ -25,7 +26,8 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
     sent_letters = [queue_element.reference for queue_element in completed_queue]
 
     # Get data from SQL
-    query = sql_data.sql_query("2006-10-02")
+    from_date = (datetime.now() - timedelta(days=60)).strftime("%m-%d-%Y")
+    query = sql_data.sql_query(from_date)
     data = sql_data.read_data(query)
     data_dict = sql_data.sql_to_dict(data)
 
@@ -35,19 +37,21 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
     }
 
     # Generate and send letters to people
-    with MailMerge(config.TEMPLATE, keep_fields="all") as document:
-        for cpr, name in data_dict.items():
-            # Make sure we didn't send this letter already
-            encrypted_id = encrypt_data(cpr, name)
-            if encrypted_id in sent_letters:
-                continue
+    # with MailMerge(config.TEMPLATE, keep_fields="all") as document:
+    for cpr, name in data_dict.items():
+        # Make sure we didn't send this letter already
+        encrypted_id = encrypt_data(cpr, name)
+        if encrypted_id in sent_letters:
+            print("hej")
+            # continue
 
-            # Send the letter and save a reference for later
-            queue_element = orchestrator_connection.create_queue_element(config.QUEUE_NAME, encrypted_id)
-            filename = write_document(name, cpr, document)
-            m = digital_post_composer.compose_message("Welcome to Aarhus", config.CVR, cpr, filename)
-            digital_post.send_message("Digital Post", m, kombit_access)
-            orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.DONE)
+        # Send the letter and save a reference for later
+        queue_element = orchestrator_connection.create_queue_element(config.QUEUE_NAME, encrypted_id)
+        # filename = write_document(name, cpr, document)
+        filename = config.PDF_WELCOME
+        m = digital_post_composer.compose_message("Welcome to Aarhus", config.CVR, cpr, filename)
+        digital_post.send_message("Digital Post", m, kombit_access)
+        orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.DONE)
 
 
 def write_document(name: str, cpr: str, document: MailMerge) -> str:
