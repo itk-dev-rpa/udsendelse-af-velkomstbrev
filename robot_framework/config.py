@@ -30,3 +30,4 @@ SAVE_FOLDER = "robot_framework/tmp"
 CVR = "55133018"
 TEMPLATE = 'robot_framework/template/Welcome letter to internationals.docx'
 PDF_WELCOME = 'robot_framework/template/Welcome letter to internationals_noname.pdf'
+MAX_DAYS_SINCE_LAST_MOVE = 50
