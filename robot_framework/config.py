@@ -15,7 +15,7 @@ SCREENSHOT_SENDER = "robot@friend.dk"
 ERROR_EMAIL = "Error Email"
 KEYVAULT_CREDENTIALS = "Keyvault"
 KEYVAULT_URI = "Keyvault URI"
-KEYVAULT_PATH = "Digital_Post_Masseopslag"
+KEYVAULT_PATH = "TBD"
 
 
 # Queue specific configs
