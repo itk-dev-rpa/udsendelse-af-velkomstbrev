@@ -8,6 +8,8 @@ from python_serviceplatformen.models.message import (
     Message, MessageHeader, Sender, Recipient, MessageBody, MainDocument, File, Action, EntryPoint
 )
 
+from robot_framework import config
+
 
 def compose_message(label: str, cvr: str, recipient_cpr: str, attachment_file_path: str) -> Message:
     """Compose a message for Digital Post according to the requirements for a welcome letter.
@@ -35,7 +37,7 @@ def compose_message(label: str, cvr: str, recipient_cpr: str, attachment_file_pa
             sender=Sender(
                 senderID=cvr,
                 idType="CVR",
-                label="Python Serviceplatformen"
+                label="Aarhus Kommune"
             ),
             recipient=Recipient(
                 recipientID=recipient_cpr,
@@ -56,10 +58,10 @@ def compose_message(label: str, cvr: str, recipient_cpr: str, attachment_file_pa
                 actions=[
                     Action(label="Explore international.aarhus.dk to discover more",
                            actionCode="INFORMATION",
-                           entryPoint=EntryPoint(url="https://direc.to/kN8s")),
+                           entryPoint=EntryPoint(url=config.EXPLORE_LINK)),
                     Action(label="What do you think of this letter? Complete our survey for a chance to win a gift card to Musikhuset Aarhus!",
                            actionCode="INFORMATION",
-                           entryPoint=EntryPoint(url="https://www.survey-xact.dk/LinkCollector?key=1HZ74774L19K")),
+                           entryPoint=EntryPoint(url=config.FEEDBACK_LINK)),
                 ]
             )
         )

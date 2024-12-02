@@ -16,8 +16,7 @@ def get_certificate(vault_username: str, vault_password: str, vault_uri: str, va
     """
     # Access Keyvault
     vault_client = Client(vault_uri)
-    token = vault_client.auth.approle.login(role_id=vault_username, secret_id=vault_password)
-    vault_client.token = token['auth']['client_token']
+    vault_client.auth.approle.login(role_id=vault_username, secret_id=vault_password)
 
     # Get certificate
     read_response = vault_client.secrets.kv.v2.read_secret_version(mount_point='rpa', path=vault_path, raise_on_deleted_version=True)

@@ -29,10 +29,9 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
     from_date = (datetime.now() - timedelta(days=config.MAX_DAYS_SINCE_LAST_MOVE)).strftime("%m-%d-%Y")
     query = sql_data.sql_query(from_date)
     data = sql_data.read_data(query)
-    data_dict = sql_data.sql_to_dict(data)
 
     # Generate and send letters to recipients
-    for cpr, name in data_dict.items():
+    for cpr, name in data:
         # Make sure we didn't send this letter already
         encrypted_id = encrypt_data(cpr, name)
         if encrypted_id in sent_letters:

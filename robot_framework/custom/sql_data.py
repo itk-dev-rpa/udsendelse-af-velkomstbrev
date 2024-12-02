@@ -52,18 +52,3 @@ def read_data(query: str) -> list[pyodbc.Row]:
     data = cursor.fetchall()
     cursor.close()
     return data
-
-
-def sql_to_dict(data: list[pyodbc.Row]) -> dict:
-    """Convert list of SQL rows to a dictionary with first column as key and second as value.
-
-    Args:
-        data: List of SQL rows.
-
-    Returns:
-        Dictionary with first column set as key and second column set as value.
-    """
-    id_names = {}
-    for row in data:
-        id_names[row[0]] = row[1]
-    return id_names
