@@ -13,15 +13,23 @@ SCREENSHOT_SENDER = "robot@friend.dk"
 
 # Constant/Credential names
 ERROR_EMAIL = "Error Email"
+KEYVAULT_CREDENTIALS = "Keyvault"
+KEYVAULT_URI = "Keyvault URI"
+KEYVAULT_PATH = "Udsendelse-af-Velkomstbrev-International"
 
 
 # Queue specific configs
 # ----------------------
 
 # The name of the job queue (if any)
-QUEUE_NAME = None
+QUEUE_NAME = "Udsendelse af Velkomstbrev"
 
-# The limit on how many queue elements to process
-MAX_TASK_COUNT = 100
-
+# Robot specific configs
 # ----------------------
+SAVE_FOLDER = "robot_framework/tmp"
+CVR = "55133018"
+TEMPLATE = 'robot_framework/template/Welcome letter to internationals.docx'
+PDF_WELCOME = 'robot_framework/template/Welcome letter to internationals_noname.pdf'
+MAX_DAYS_SINCE_LAST_MOVE = 10
+EXPLORE_LINK = "https://direc.to/kN8s"
+FEEDBACK_LINK = "https://www.survey-xact.dk/LinkCollector?key=1HZ74774L19K"
