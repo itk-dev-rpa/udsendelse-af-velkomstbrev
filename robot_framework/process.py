@@ -27,19 +27,21 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
 
     # Get recipients from SQL
     from_date = (datetime.now() - timedelta(days=config.MAX_DAYS_SINCE_LAST_MOVE)).strftime("%m-%d-%Y")
-    query = sql_data.sql_query(from_date)
+    to_date = (datetime.now() - timedelta(days=config.MIN_DAYS_SINCE_LAST_MOVE)).strftime("%m-%d-%Y")
+    query = sql_data.sql_query(from_date, to_date)
     data = sql_data.read_data(query)
 
     # Generate and send letters to recipients
     for cpr, name in data:
         # Make sure we didn't send this letter already
         encrypted_id = encrypt_data(cpr, name)
-        if encrypted_id in sent_letters:
+        is_registered = digital_post.is_registered(cpr, 'digitalpost', kombit_access)
+        if encrypted_id in sent_letters or not is_registered:
             continue
 
         # Send the letter and save a reference for later
         queue_element = orchestrator_connection.create_queue_element(config.QUEUE_NAME, encrypted_id)
-        m = digital_post_composer.compose_message("Welcome to Aarhus", config.CVR, cpr, config.PDF_WELCOME)
+        m = digital_post_composer.compose_message("Welcome to Aarhus", config.CVR, cpr, name, config.PDF_WELCOME)
         digital_post.send_message("Digital Post", m, kombit_access)
         orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.DONE)
 
