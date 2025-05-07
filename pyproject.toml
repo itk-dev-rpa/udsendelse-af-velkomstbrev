@@ -22,6 +22,9 @@ dependencies = [
     "docx2pdf == 0.1.8",
     "python-serviceplatformen == 1.*",
     "hvac == 2.*",
+    "PyPDF2 == 3.*",
+    "reportlab == 4.*",
+
 ]
 
 [project.optional-dependencies]
