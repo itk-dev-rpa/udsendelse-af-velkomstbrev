@@ -75,6 +75,15 @@ def compose_message(label: str, cvr: str, recipient_cpr: str, recipient_name: st
 
 
 def generate_pdf(pdf_template: str, name: str) -> str:
+    """Generate a PDF from the template, using the provided name.
+
+    Args:
+        pdf_template: PDF template.
+        name: Name to add to template.
+
+    Returns:
+        The file is returned as a string.
+    """
     packet = io.BytesIO()
     name_canvas = canvas.Canvas(packet, A4)
     _, height = A4
