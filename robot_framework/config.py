@@ -28,8 +28,11 @@ QUEUE_NAME = "Udsendelse af Velkomstbrev"
 # ----------------------
 SAVE_FOLDER = "robot_framework/tmp"
 CVR = "55133018"
-TEMPLATE = 'robot_framework/template/Welcome letter to internationals.docx'
-PDF_WELCOME = 'robot_framework/template/Welcome letter to internationals_noname.pdf'
-MAX_DAYS_SINCE_LAST_MOVE = 10
+PDF_WELCOME = 'robot_framework/template/Velkomstbrev_AK_digital.pdf'
+FONT_NAME = 'OpenSans'
+FONT_PATH = 'robot_framework/template/OpenSans-Bold.ttf'
+FONT_COLOR = '#538135'
+MAX_DAYS_SINCE_LAST_MOVE = 31
+MIN_DAYS_SINCE_LAST_MOVE = 21
 EXPLORE_LINK = "https://direc.to/kN8s"
 FEEDBACK_LINK = "https://www.survey-xact.dk/LinkCollector?key=1HZ74774L19K"
