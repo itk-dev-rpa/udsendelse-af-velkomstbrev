@@ -38,8 +38,6 @@ def compose_message(label: str, cvr: str, recipient_cpr: str, recipient_name: st
             messageType="DIGITALPOST",
             messageUUID=str(uuid.uuid4()),
             label=label,
-            mandatory=False,
-            legalNotification=False,
             sender=Sender(
                 senderID=cvr,
                 idType="CVR",
