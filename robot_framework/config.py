@@ -34,5 +34,7 @@ FONT_PATH = 'robot_framework/template/OpenSans-Bold.ttf'
 FONT_COLOR = '#538135'
 MAX_DAYS_SINCE_LAST_MOVE = 31
 MIN_DAYS_SINCE_LAST_MOVE = 21
+DB_DATE_FORMAT = "%m-%d-%Y"
+LOCAL_KOM_KODE = "0751"
 EXPLORE_LINK = "https://direc.to/kN8s"
 FEEDBACK_LINK = "https://www.survey-xact.dk/LinkCollector?key=1HZ74774L19K"
