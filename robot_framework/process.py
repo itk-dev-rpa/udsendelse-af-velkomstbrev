@@ -33,23 +33,24 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
         queue_element = orchestrator_connection.get_queue_elements(config.QUEUE_NAME, encrypted_id)
         queue_element = queue_element[0] if queue_element else None
 
+        # Check if we haven't found a move from outside the city before
         if not queue_element:
             # Skip moves from within the city, but only if first move
             if prev_kom_kode == config.LOCAL_KOM_KODE:
                 continue
-            # Create a new queue element with the current date
+            # Create a new queue element with the move date as data
             queue_element = orchestrator_connection.create_queue_element(config.QUEUE_NAME, encrypted_id, data=move_date.strftime(config.DB_DATE_FORMAT))
             orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.IN_PROGRESS)
 
+        # Don't send letter twice or if recipient doesn't have Digital Post
         elif queue_element.status == QueueStatus.DONE or not digital_post.is_registered(cpr, 'digitalpost', kombit_access):
-            # Don't send letter twice or if recipient doesn't have Digital Post
             continue
 
+        # Grab the move date and check if the move is in progress and if first move was done far enough in the past
         queue_date = datetime.strptime(queue_element.data, config.DB_DATE_FORMAT)
         if queue_element.status == QueueStatus.IN_PROGRESS and (datetime.today() - queue_date).days >= config.MIN_DAYS_SINCE_LAST_MOVE:
-            # Send the letter
             m = digital_post_composer.compose_message("Welcome to Aarhus", config.CVR, cpr, name, config.PDF_WELCOME)
-            # digital_post.send_message("Digital Post", m, kombit_access)
+            digital_post.send_message("Digital Post", m, kombit_access)
             orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.DONE)
 
 
