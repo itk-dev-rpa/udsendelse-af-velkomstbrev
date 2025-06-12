@@ -29,21 +29,20 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
     # Generate and send letters to recipients
     for cpr, name, move_date, prev_kom_kode in data:
         encrypted_id = encrypt_data(cpr, name)
-        is_registered = digital_post.is_registered(cpr, 'digitalpost', kombit_access)
 
         queue_element = orchestrator_connection.get_queue_elements(config.QUEUE_NAME, encrypted_id)
         queue_element = queue_element[0] if queue_element else None
 
         if not queue_element:
-            # Skip moves from within the city
+            # Skip moves from within the city, but only if first move
             if prev_kom_kode == config.LOCAL_KOM_KODE:
                 continue
             # Create a new queue element with the current date
             queue_element = orchestrator_connection.create_queue_element(config.QUEUE_NAME, encrypted_id, data=move_date.strftime(config.DB_DATE_FORMAT))
             orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.IN_PROGRESS)
 
-        elif queue_element.status == QueueStatus.DONE or not is_registered:
-            # Make sure we didn't send this letter already
+        elif queue_element.status == QueueStatus.DONE or not digital_post.is_registered(cpr, 'digitalpost', kombit_access):
+            # Don't send letter twice or if recipient doesn't have Digital Post
             continue
 
         queue_date = datetime.strptime(queue_element.data, config.DB_DATE_FORMAT)
