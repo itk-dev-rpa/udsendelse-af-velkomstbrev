@@ -21,29 +21,37 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
     certificate = keyvault.get_certificate(vault_username=vault_auth.username, vault_password=vault_auth.password, vault_uri=vault_uri, vault_path=config.KEYVAULT_PATH)
     kombit_access = KombitAccess(cvr=config.CVR, cert_path=certificate)
 
-    # Get list of sent letters
-    completed_queue = orchestrator_connection.get_queue_elements(config.QUEUE_NAME, status=QueueStatus.DONE)
-    sent_letters = [queue_element.reference for queue_element in completed_queue]
-
     # Get recipients from SQL
-    from_date = (datetime.now() - timedelta(days=config.MAX_DAYS_SINCE_LAST_MOVE)).strftime("%m-%d-%Y")
-    to_date = (datetime.now() - timedelta(days=config.MIN_DAYS_SINCE_LAST_MOVE)).strftime("%m-%d-%Y")
-    query = sql_data.sql_query(from_date, to_date)
+    from_date = (datetime.now() - timedelta(days=config.MAX_DAYS_SINCE_LAST_MOVE)).strftime(config.DB_DATE_FORMAT)
+    query = sql_data.sql_query(from_date)
     data = sql_data.read_data(query)
 
     # Generate and send letters to recipients
-    for cpr, name in data:
-        # Make sure we didn't send this letter already
+    for cpr, name, move_date, prev_kom_kode in data:
         encrypted_id = encrypt_data(cpr, name)
-        is_registered = digital_post.is_registered(cpr, 'digitalpost', kombit_access)
-        if encrypted_id in sent_letters or not is_registered:
+
+        queue_element = orchestrator_connection.get_queue_elements(config.QUEUE_NAME, encrypted_id)
+        queue_element = queue_element[0] if queue_element else None
+
+        # Check if we haven't found a move from outside the city before
+        if not queue_element:
+            # Skip moves from within the city, but only if first move
+            if prev_kom_kode == config.LOCAL_KOM_KODE:
+                continue
+            # Create a new queue element with the move date as data
+            queue_element = orchestrator_connection.create_queue_element(config.QUEUE_NAME, encrypted_id, data=move_date.strftime(config.DB_DATE_FORMAT))
+            orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.IN_PROGRESS)
+
+        # Don't send letter twice or if recipient doesn't have Digital Post
+        elif queue_element.status == QueueStatus.DONE or not digital_post.is_registered(cpr, 'digitalpost', kombit_access):
             continue
 
-        # Send the letter and save a reference for later
-        queue_element = orchestrator_connection.create_queue_element(config.QUEUE_NAME, encrypted_id)
-        m = digital_post_composer.compose_message("Welcome to Aarhus", config.CVR, cpr, name, config.PDF_WELCOME)
-        digital_post.send_message("Digital Post", m, kombit_access)
-        orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.DONE)
+        # Grab the move date and check if the move is in progress and if first move was done far enough in the past
+        queue_date = datetime.strptime(queue_element.data, config.DB_DATE_FORMAT)
+        if queue_element.status == QueueStatus.IN_PROGRESS and (datetime.today() - queue_date).days >= config.MIN_DAYS_SINCE_LAST_MOVE:
+            m = digital_post_composer.compose_message("Welcome to Aarhus", config.CVR, cpr, name, config.PDF_WELCOME)
+            digital_post.send_message("Digital Post", m, kombit_access)
+            orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.DONE)
 
 
 def encrypt_data(data: str, salt: str) -> str:

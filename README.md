@@ -6,6 +6,16 @@ This RPA extract a list of people who moved to the city of Aarhus within the las
 
 Deploy on Open Orchestrator.
 
+## Process
+
+- Get list of people who moved to the city within the last month from SQL
+- Check if how many days have passed since their last move within the city
+- Either send a letter or save encrypted ID in Orchestrator Queue
+
+## Known errors
+
+- Serviceplatformen may do a timeout when checking if a person is registered with Digital Post, but the robot will catch it next time.
+
 ## Requirements
 
 Minimum python version 3.10
