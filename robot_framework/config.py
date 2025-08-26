@@ -1,5 +1,6 @@
 """This module contains configuration constants used across the framework"""
 
+ROBOT_NAME = "Udsendelse af Velkomstbrev"
 # The number of times the robot retries on an error before terminating.
 MAX_RETRY_COUNT = 3
 
