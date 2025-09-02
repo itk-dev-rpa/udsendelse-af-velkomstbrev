@@ -15,7 +15,7 @@ from robot_framework import config
 def process(orchestrator_connection: OrchestratorConnection) -> None:
     """Do the primary process of the robot."""
     orchestrator_connection.log_trace("Running process.")
-    event_log.setup_logging(orchestrator_connection.get_constant("Event Log"))
+    event_log.setup_logging(orchestrator_connection.get_constant(config.EVENT_LOG_CONN))
 
     # Get tokens
     vault_auth = orchestrator_connection.get_credential(config.KEYVAULT_CREDENTIALS)
@@ -43,7 +43,7 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
             # Create a new queue element with the move date as data
             queue_element = orchestrator_connection.create_queue_element(config.QUEUE_NAME, encrypted_id, data=move_date.strftime(config.DB_DATE_FORMAT))
             orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.IN_PROGRESS)
-            event_log.emit(config.ROBOT_NAME, "New move found")
+            event_log.emit(orchestrator_connection.process_name, "New move found")
 
         # Don't send letter twice or if recipient doesn't have Digital Post
         elif queue_element.status == QueueStatus.DONE or not digital_post.is_registered(cpr, 'digitalpost', kombit_access):
@@ -55,7 +55,7 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
             m = digital_post_composer.compose_message("Welcome to Aarhus", config.CVR, cpr, name, config.PDF_WELCOME)
             digital_post.send_message("Digital Post", m, kombit_access)
             orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.DONE)
-            event_log.emit(config.ROBOT_NAME, "Sent letter")
+            event_log.emit(orchestrator_connection.process_name, "Sent letter")
 
 
 def encrypt_data(data: str, salt: str) -> str:

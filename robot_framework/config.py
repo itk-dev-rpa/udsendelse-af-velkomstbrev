@@ -1,6 +1,5 @@
 """This module contains configuration constants used across the framework"""
 
-ROBOT_NAME = "Udsendelse af Velkomstbrev"
 # The number of times the robot retries on an error before terminating.
 MAX_RETRY_COUNT = 3
 
@@ -17,6 +16,7 @@ ERROR_EMAIL = "Error Email"
 KEYVAULT_CREDENTIALS = "Keyvault"
 KEYVAULT_URI = "Keyvault URI"
 KEYVAULT_PATH = "Udsendelse-af-Velkomstbrev-International"
+EVENT_LOG_CONN = "Event Log"
 
 
 # Queue specific configs
