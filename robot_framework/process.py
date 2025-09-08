@@ -15,7 +15,7 @@ from robot_framework import config
 def process(orchestrator_connection: OrchestratorConnection) -> None:
     """Do the primary process of the robot."""
     orchestrator_connection.log_trace("Running process.")
-    event_log.setup_logging(orchestrator_connection.get_constant(config.EVENT_LOG_CONN))
+    event_log.setup_logging(orchestrator_connection.get_constant(config.EVENT_LOG_CONN).value)
 
     # Get tokens
     vault_auth = orchestrator_connection.get_credential(config.KEYVAULT_CREDENTIALS)
