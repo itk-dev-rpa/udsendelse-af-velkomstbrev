@@ -16,6 +16,7 @@ ERROR_EMAIL = "Error Email"
 KEYVAULT_CREDENTIALS = "Keyvault"
 KEYVAULT_URI = "Keyvault URI"
 KEYVAULT_PATH = "Udsendelse-af-Velkomstbrev-International"
+EVENT_LOG_CONN = "Event Log"
 
 
 # Queue specific configs
