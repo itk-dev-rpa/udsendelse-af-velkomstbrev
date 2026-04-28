@@ -76,5 +76,5 @@ def encrypt_data(data: str, salt: str) -> str:
 if __name__ == "__main__":
     conn_string = os.getenv("OpenOrchestratorConnString")
     crypto_key = os.getenv("OpenOrchestratorKey")
-    oc = OrchestratorConnection("Udsendelse af velkomstbrev", conn_string, crypto_key, "")
+    oc = OrchestratorConnection("Udsendelse af velkomstbrev", conn_string, crypto_key, "", "", "")
     process(oc)
