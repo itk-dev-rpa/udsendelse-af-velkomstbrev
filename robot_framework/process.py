@@ -1,6 +1,6 @@
 """This module contains the main process of the robot."""
+
 import hashlib
-import os
 from datetime import datetime, timedelta
 
 from OpenOrchestrator.orchestrator_connection.connection import OrchestratorConnection, QueueStatus
