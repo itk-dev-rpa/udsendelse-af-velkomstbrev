@@ -1,6 +1,6 @@
 """This module contains the main process of the robot."""
+
 import hashlib
-import os
 from datetime import datetime, timedelta
 
 from OpenOrchestrator.orchestrator_connection.connection import OrchestratorConnection, QueueStatus
@@ -71,10 +71,3 @@ def encrypt_data(data: str, salt: str) -> str:
     salted_data = data + salt
     hash_obj = hashlib.sha256(salted_data.encode())
     return hash_obj.hexdigest()
-
-
-if __name__ == "__main__":
-    conn_string = os.getenv("OpenOrchestratorConnString")
-    crypto_key = os.getenv("OpenOrchestratorKey")
-    oc = OrchestratorConnection("Udsendelse af velkomstbrev", conn_string, crypto_key, "")
-    process(oc)
