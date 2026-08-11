@@ -1,58 +1,49 @@
 """Functions for getting data from SQL for people who moved into the city of Aarhus."""
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 
 import pyodbc
 
 CONNECTION_STRING = "DRIVER={ODBC Driver 17 for SQL Server};SERVER=FaellesSQL;DATABASE=DWH;Trusted_Connection=yes"
 
-# Flyttehistorik is a log with one row per move, where Komkode is the commune the person moved *to*.
-# LAG is used to also put the commune they moved *from* on each row, so every row describes a single
-# move as a from/to pair. The move we are looking for is the most recent one into Aarhus from outside
-# Denmark, which is unaffected by any later moves within Aarhus.
+# Mart.Flyttehistorik has one row per move, where Aktiv = 1 marks the person's current address and
+# DatoLastTilflytAAK is the date of their most recent move into Aarhus, so Komkode = '0751' on the
+# active row means they live here now. That view does not record where a move came *from*, so the
+# raw dwh.Flyttehistorik log is used for that: LAG puts the previous address of each move on its
+# row, which is how we tell an arrival from abroad from a move within Denmark.
 # AdresseAktuel is used to get the name and filter people who are dead, young or missing.
-# Takes the earliest and latest arrival date to consider as parameters, twice, in that order.
+# Takes the earliest and latest arrival date to consider as parameters, in that order.
 LETTER_RECEIVERS_QUERY = """
+    -- Everyone whose latest arrival in Aarhus falls in the period we are sending letters for
     WITH candidates AS (
-        SELECT DISTINCT Flyttehistorik.CPR
-        FROM DWH.dwh.Flyttehistorik
-        INNER JOIN DWH.Mart.AdresseAktuel ON AdresseAktuel.CPR = Flyttehistorik.CPR
-        WHERE Flyttehistorik.Komkode = '0751' -- Aarhus Kommune
-            AND Flyttehistorik.DatoTilflyt BETWEEN ? AND ?
+        SELECT
+            AdresseAktuel.CPR,
+            AdresseAktuel.Fornavn AS given_name,
+            Flyttehistorik.DatoLastTilflytAAK AS arrival_date
+        FROM DWH.Mart.AdresseAktuel
+        JOIN DWH.Mart.Flyttehistorik ON AdresseAktuel.CPR = Flyttehistorik.CPR
+        WHERE Flyttehistorik.Aktiv = 1
+            AND Flyttehistorik.Komkode = '0751' -- Aarhus Kommune
             AND AdresseAktuel.Forsvundet = 0
             AND AdresseAktuel.Doedsdato IS NULL
             AND AdresseAktuel.Alder >= 18
             AND AdresseAktuel.HerkomstKode <> 'DK'
+            AND Flyttehistorik.DatoLastTilflytAAK BETWEEN ? AND ?
     ),
+    -- Where each of their moves came from. Restricted to candidates so the window functions run
+    -- over a few thousand people's history instead of every move ever made in the country.
     moves AS (
-        SELECT Flyttehistorik.CPR, Komkode, DatoTilflyt, DatoFraflytAAK,
-        LAG(Komkode) OVER (PARTITION BY Flyttehistorik.CPR ORDER BY DatoTilflyt) AS from_kom_kode,
-        LAG(Vejkode) OVER (PARTITION BY Flyttehistorik.CPR ORDER BY DatoTilflyt) AS from_vej_kode,
-        ROW_NUMBER() OVER (PARTITION BY Flyttehistorik.CPR ORDER BY DatoTilflyt DESC) AS row_num
-        FROM DWH.dwh.Flyttehistorik
-        INNER JOIN candidates ON candidates.CPR = Flyttehistorik.CPR
-    ),
-    arrivals AS (
-        SELECT CPR, MAX(DatoTilflyt) AS arrival_date
-        FROM moves
-        WHERE Komkode = '0751' -- Aarhus Kommune
-            AND from_kom_kode NOT IN ('0101' ,'0147' ,'0151' ,'0153' ,'0155' ,'0157' ,'0159' ,'0161' ,'0163' ,'0165' ,'0167' ,'0169' ,'0173' ,'0175' ,'0183' ,'0185' ,'0187' ,'0190' ,'0201' ,'0210' ,'0217' ,'0219' ,'0223' ,'0230' ,'0240' ,'0250' ,'0253' ,'0259' ,'0260' ,'0265' ,'0269' ,'0270' ,'0306' ,'0316' ,'0320' ,'0326' ,'0329' ,'0330' ,'0336' ,'0340' ,'0350' ,'0360' ,'0370' ,'0376' ,'0390' ,'0400' ,'0410' ,'0411' ,'0420' ,'0430' ,'0440' ,'0450' ,'0461' ,'0479' ,'0480' ,'0482' ,'0492' ,'0510' ,'0530' ,'0540' ,'0550' ,'0561' ,'0563' ,'0573' ,'0575' ,'0580' ,'0607' ,'0615' ,'0621' ,'0630' ,'0657' ,'0661' ,'0665' ,'0671' ,'0706' ,'0707' ,'0710' ,'0727' ,'0730' ,'0740' ,'0741' ,'0746' ,'0751' ,'0756' ,'0760' ,'0766' ,'0773' ,'0779' ,'0787' ,'0791' ,'0810' ,'0813' ,'0820' ,'0825' ,'0840' ,'0846' ,'0849' ,'0851' ,'0860') -- Danish commune codes, so anything else is outside Denmark
-            AND from_vej_kode NOT IN ('9902', '9901') -- Homeless and couch surfers
-        GROUP BY CPR
+        SELECT raw.CPR, raw.DatoTilflyt,
+        LAG(raw.Komkode) OVER (PARTITION BY raw.CPR ORDER BY raw.DatoTilflyt) AS from_kom_kode,
+        LAG(raw.Vejkode) OVER (PARTITION BY raw.CPR ORDER BY raw.DatoTilflyt) AS from_vej_kode
+        FROM DWH.dwh.Flyttehistorik raw
+        JOIN candidates ON candidates.CPR = raw.CPR
     )
-    SELECT
-        arrivals.CPR,
-        AdresseAktuel.Fornavn AS given_name,
-        arrivals.arrival_date
-    FROM arrivals
-    INNER JOIN moves latest_move ON latest_move.CPR = arrivals.CPR AND latest_move.row_num = 1
-    INNER JOIN DWH.Mart.AdresseAktuel ON AdresseAktuel.CPR = arrivals.CPR
-    WHERE latest_move.Komkode = '0751'
-        AND latest_move.DatoFraflytAAK IS NULL
-        AND arrivals.arrival_date BETWEEN ? AND ?
-        AND AdresseAktuel.Forsvundet = 0
-        AND	AdresseAktuel.Doedsdato IS NULL
-        AND	AdresseAktuel.Alder >= 18
-        AND AdresseAktuel.HerkomstKode <> 'DK'
+    SELECT candidates.CPR, candidates.given_name, candidates.arrival_date
+    FROM candidates
+    -- The move that brought them here, so we can see where they came from
+    JOIN moves ON moves.CPR = candidates.CPR AND moves.DatoTilflyt = candidates.arrival_date
+    WHERE moves.from_kom_kode NOT IN ('0101' ,'0147' ,'0151' ,'0153' ,'0155' ,'0157' ,'0159' ,'0161' ,'0163' ,'0165' ,'0167' ,'0169' ,'0173' ,'0175' ,'0183' ,'0185' ,'0187' ,'0190' ,'0201' ,'0210' ,'0217' ,'0219' ,'0223' ,'0230' ,'0240' ,'0250' ,'0253' ,'0259' ,'0260' ,'0265' ,'0269' ,'0270' ,'0306' ,'0316' ,'0320' ,'0326' ,'0329' ,'0330' ,'0336' ,'0340' ,'0350' ,'0360' ,'0370' ,'0376' ,'0390' ,'0400' ,'0410' ,'0411' ,'0420' ,'0430' ,'0440' ,'0450' ,'0461' ,'0479' ,'0480' ,'0482' ,'0492' ,'0510' ,'0530' ,'0540' ,'0550' ,'0561' ,'0563' ,'0573' ,'0575' ,'0580' ,'0607' ,'0615' ,'0621' ,'0630' ,'0657' ,'0661' ,'0665' ,'0671' ,'0706' ,'0707' ,'0710' ,'0727' ,'0730' ,'0740' ,'0741' ,'0746' ,'0751' ,'0756' ,'0760' ,'0766' ,'0773' ,'0779' ,'0787' ,'0791' ,'0810' ,'0813' ,'0820' ,'0825' ,'0840' ,'0846' ,'0849' ,'0851' ,'0860') -- Danish commune codes, so anything else is outside Denmark
+        AND moves.from_vej_kode NOT IN ('9902', '9901') -- Homeless and couch surfers
     """
 
 
@@ -66,15 +57,14 @@ def get_letter_receivers(min_days_since_arrival: int, max_days_since_arrival: in
     Returns:
         List of rows of cpr, first name and arrival date.
     """
-    today = datetime.now()
+    today = date.today()
     earliest_arrival = today - timedelta(days=max_days_since_arrival)
     latest_arrival = today - timedelta(days=min_days_since_arrival)
 
     connection = pyodbc.connect(CONNECTION_STRING)
     try:
         cursor = connection.cursor()
-        # The date range is used twice: once to narrow the move history, once to pick the arrivals.
-        cursor.execute(LETTER_RECEIVERS_QUERY, earliest_arrival, latest_arrival, earliest_arrival, latest_arrival)
+        cursor.execute(LETTER_RECEIVERS_QUERY, earliest_arrival, latest_arrival)
         return cursor.fetchall()
     finally:
         connection.close()
