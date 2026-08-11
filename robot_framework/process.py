@@ -22,8 +22,6 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
     certificate = keyvault.get_certificate(vault_username=vault_auth.username, vault_password=vault_auth.password, vault_uri=vault_uri, vault_path=config.KEYVAULT_PATH)
     kombit_access = KombitAccess(cvr=config.CVR, cert_path=certificate)
 
-    # Get everyone whose letter is due now from SQL. The query decides who is due,
-    # so the queue is only used to keep track of who has already received a letter.
     data = sql_data.get_letter_receivers(config.MIN_DAYS_SINCE_ARRIVAL, config.MAX_DAYS_SINCE_ARRIVAL)
     orchestrator_connection.log_info(f"Number of people from query: {len(data)}")
 
@@ -40,7 +38,6 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
             orchestrator_connection.log_info("Skipping not registered for Digital Post.")
             continue
 
-        # Mark the letter as in progress before sending, so an unfinished attempt is retried on the next run
         queue_element = queue_elements[0] if queue_elements else orchestrator_connection.create_queue_element(config.QUEUE_NAME, encrypted_id, data=arrival_date.strftime(config.QUEUE_DATE_FORMAT))
         orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.IN_PROGRESS)
 
