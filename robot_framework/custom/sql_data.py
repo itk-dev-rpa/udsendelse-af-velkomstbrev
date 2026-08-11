@@ -44,7 +44,7 @@ LETTER_RECEIVERS_QUERY = """
         AND AdresseAktuel.Forsvundet = 0
         AND	AdresseAktuel.Doedsdato IS NULL
         AND	AdresseAktuel.Alder >= 18
-        AND AdresseAktuel.HerkomstKode != DK
+        AND AdresseAktuel.HerkomstKode != 'DK'
     """
 
 
