@@ -33,9 +33,11 @@ PDF_WELCOME = 'robot_framework/template/Velkomstbrev_AK_digital.pdf'
 FONT_NAME = 'OpenSans'
 FONT_PATH = 'robot_framework/template/OpenSans-Bold.ttf'
 FONT_COLOR = '#538135'
-MAX_DAYS_SINCE_LAST_MOVE = 31
-MIN_DAYS_SINCE_LAST_MOVE = 21
-DB_DATE_FORMAT = "%m-%d-%Y"
-LOCAL_KOM_KODE = "0751"
+# How long to wait after a person arrived in the city before sending them a letter,
+# and how far back to keep looking for arrivals we haven't sent a letter for yet.
+MIN_DAYS_SINCE_ARRIVAL = 21
+MAX_DAYS_SINCE_ARRIVAL = 30
+# Format of the arrival date stored on queue elements. Dates are no longer formatted into the query.
+QUEUE_DATE_FORMAT = "%d-%m-%Y"
 EXPLORE_LINK = "https://direc.to/kN8s"
 FEEDBACK_LINK = "https://www.survey-xact.dk/LinkCollector?key=1HZ74774L19K"
