@@ -10,16 +10,27 @@ CONNECTION_STRING = "DRIVER={ODBC Driver 17 for SQL Server};SERVER=FaellesSQL;DA
 # move as a from/to pair. The move we are looking for is the most recent one into Aarhus from outside
 # Denmark, which is unaffected by any later moves within Aarhus.
 # AdresseAktuel is used to get the name and filter people who are dead, young or missing.
-# Takes the earliest and latest arrival date to consider as parameters, in that order.
+# Takes the earliest and latest arrival date to consider as parameters, twice, in that order.
 LETTER_RECEIVERS_QUERY = """
-    WITH moves AS (
-        SELECT *,
-        LAG(Komkode) OVER (PARTITION BY CPR ORDER BY DatoTilflyt) AS from_kom_kode,
-        LAG(Vejkode) OVER (PARTITION BY CPR ORDER BY DatoTilflyt) AS from_vej_kode,
-        ROW_NUMBER() OVER (PARTITION BY CPR ORDER BY DatoTilflyt DESC) AS row_num
+    WITH candidates AS (
+        SELECT DISTINCT Flyttehistorik.CPR
         FROM DWH.dwh.Flyttehistorik
+        INNER JOIN DWH.Mart.AdresseAktuel ON AdresseAktuel.CPR = Flyttehistorik.CPR
+        WHERE Flyttehistorik.Komkode = '0751' -- Aarhus Kommune
+            AND Flyttehistorik.DatoTilflyt BETWEEN ? AND ?
+            AND AdresseAktuel.Forsvundet = 0
+            AND AdresseAktuel.Doedsdato IS NULL
+            AND AdresseAktuel.Alder >= 18
+            AND AdresseAktuel.HerkomstKode <> 'DK'
     ),
-    -- The latest move into Aarhus from outside Denmark, ignoring any moves within Aarhus since
+    moves AS (
+        SELECT Flyttehistorik.CPR, Komkode, DatoTilflyt, DatoFraflytAAK,
+        LAG(Komkode) OVER (PARTITION BY Flyttehistorik.CPR ORDER BY DatoTilflyt) AS from_kom_kode,
+        LAG(Vejkode) OVER (PARTITION BY Flyttehistorik.CPR ORDER BY DatoTilflyt) AS from_vej_kode,
+        ROW_NUMBER() OVER (PARTITION BY Flyttehistorik.CPR ORDER BY DatoTilflyt DESC) AS row_num
+        FROM DWH.dwh.Flyttehistorik
+        INNER JOIN candidates ON candidates.CPR = Flyttehistorik.CPR
+    ),
     arrivals AS (
         SELECT CPR, MAX(DatoTilflyt) AS arrival_date
         FROM moves
@@ -35,16 +46,13 @@ LETTER_RECEIVERS_QUERY = """
     FROM arrivals
     INNER JOIN moves latest_move ON latest_move.CPR = arrivals.CPR AND latest_move.row_num = 1
     INNER JOIN DWH.Mart.AdresseAktuel ON AdresseAktuel.CPR = arrivals.CPR
-    -- Only those who still live in the city
     WHERE latest_move.Komkode = '0751'
         AND latest_move.DatoFraflytAAK IS NULL
-    -- The waiting period has passed, but the arrival isn't so old that we no longer care
         AND arrivals.arrival_date BETWEEN ? AND ?
-    -- Sort on data from address database
         AND AdresseAktuel.Forsvundet = 0
         AND	AdresseAktuel.Doedsdato IS NULL
         AND	AdresseAktuel.Alder >= 18
-        AND AdresseAktuel.HerkomstKode != 'DK'
+        AND AdresseAktuel.HerkomstKode <> 'DK'
     """
 
 
@@ -65,7 +73,8 @@ def get_letter_receivers(min_days_since_arrival: int, max_days_since_arrival: in
     connection = pyodbc.connect(CONNECTION_STRING)
     try:
         cursor = connection.cursor()
-        cursor.execute(LETTER_RECEIVERS_QUERY, earliest_arrival, latest_arrival)
+        # The date range is used twice: once to narrow the move history, once to pick the arrivals.
+        cursor.execute(LETTER_RECEIVERS_QUERY, earliest_arrival, latest_arrival, earliest_arrival, latest_arrival)
         return cursor.fetchall()
     finally:
         connection.close()
