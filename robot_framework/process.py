@@ -25,6 +25,7 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
     # Get everyone whose letter is due now from SQL. The query decides who is due,
     # so the queue is only used to keep track of who has already received a letter.
     data = sql_data.get_letter_receivers(config.MIN_DAYS_SINCE_ARRIVAL, config.MAX_DAYS_SINCE_ARRIVAL)
+    orchestrator_connection.log_info(f"Number of people from query: {len(data)}")
 
     # Generate and send letters to recipients
     for cpr, name, arrival_date in data:
@@ -33,8 +34,10 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
 
         # Don't send letter twice or if recipient doesn't have Digital Post
         if any(queue_element.status == QueueStatus.DONE for queue_element in queue_elements):
+            orchestrator_connection.log_info("Skipping repeated person.")
             continue
         if not digital_post.is_registered(cpr, 'digitalpost', kombit_access):
+            orchestrator_connection.log_info("Skipping not registered for Digital Post.")
             continue
 
         # Mark the letter as in progress before sending, so an unfinished attempt is retried on the next run
@@ -44,6 +47,7 @@ def process(orchestrator_connection: OrchestratorConnection) -> None:
         m = digital_post_composer.compose_message("Welcome to Aarhus", config.CVR, cpr, name, config.PDF_WELCOME)
         digital_post.send_message("Digital Post", m, kombit_access)
         orchestrator_connection.set_queue_element_status(queue_element.id, QueueStatus.DONE)
+        orchestrator_connection.log_info("Letter sent.")
         event_log.emit(orchestrator_connection.process_name, "Sent letter")
 
 
