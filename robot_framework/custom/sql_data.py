@@ -5,11 +5,12 @@ import pyodbc
 
 CONNECTION_STRING = "DRIVER={ODBC Driver 17 for SQL Server};SERVER=FaellesSQL;DATABASE=DWH;Trusted_Connection=yes"
 
-# Mart.Flyttehistorik has one row per move, where Aktiv = 1 marks the person's current address and
-# DatoLastTilflytAAK is the date of their most recent move into Aarhus, so Komkode = '0751' on the
-# active row means they live here now. That view does not record where a move came *from*, so the
-# raw dwh.Flyttehistorik log is used for that: LAG puts the previous address of each move on its
-# row, which is how we tell an arrival from abroad from a move within Denmark.
+# Flyttehistorik has one row per move, where DatoLastTilflytAAK is the date of the person's most
+# recent move into Aarhus, and DatoFraflyt is the date they moved out of that particular address.
+# DatoFraflyt is never NULL: an address they still live at gets the sentinel date 9999-12-31, so
+# that plus Komkode = '0751' means they live here now.
+# The table does not record where a move came *from*, so LAG is used to put the previous address of
+# each move on its row, which is how we tell an arrival from abroad from a move within Denmark.
 # AdresseAktuel is used to get the name and filter people who are dead, young or missing.
 # Takes the earliest and latest arrival date to consider as parameters, in that order.
 LETTER_RECEIVERS_QUERY = """
@@ -20,8 +21,9 @@ LETTER_RECEIVERS_QUERY = """
             AdresseAktuel.Fornavn AS given_name,
             Flyttehistorik.DatoLastTilflytAAK AS arrival_date
         FROM DWH.Mart.AdresseAktuel
-        JOIN DWH.Mart.Flyttehistorik ON AdresseAktuel.CPR = Flyttehistorik.CPR
-        WHERE Flyttehistorik.Aktiv = 1
+        JOIN DWH.dwh.Flyttehistorik ON AdresseAktuel.CPR = Flyttehistorik.CPR
+        -- The address they have not moved out of, ie. where they live now
+        WHERE Flyttehistorik.DatoFraflyt = '9999-12-31'
             AND Flyttehistorik.Komkode = '0751' -- Aarhus Kommune
             AND AdresseAktuel.Forsvundet = 0
             AND AdresseAktuel.Doedsdato IS NULL
