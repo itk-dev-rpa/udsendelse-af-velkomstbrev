@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-08-11
+
+### Changed
+
+- The SQL query now finds the latest move into the city from outside Denmark anywhere in a person's
+  move history, instead of only comparing their two latest moves. Moves within the city no longer
+  hide the arrival, so the waiting period is determined entirely by the query.
+- The queue is now only used to avoid sending a letter twice. Queue elements no longer carry state
+  the process depends on, and can be deleted once they are older than `MAX_DAYS_SINCE_ARRIVAL`.
+- Merged `sql_query` and `read_data` into a single `get_letter_receivers`, which calculates the date
+  range and runs the query.
+
+### Fixed
+
+- Recipients are no longer skipped on the first run where they are found, so a letter can be sent
+  the first time the robot sees a person whose waiting period has already passed.
+- The previous commune code was read from the current address, which is always Aarhus, so every
+  newly found recipient was skipped.
+
+### Removed
+
+- `LOCAL_KOM_KODE`, which is no longer needed now that the query handles moves within the city.
+
 ## [1.4.0] - 2026-04-28
 
 ### Changed
